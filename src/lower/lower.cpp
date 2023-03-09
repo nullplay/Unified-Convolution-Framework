@@ -8,6 +8,7 @@
 
 #include "taco/index_notation/index_notation.h"
 #include "taco/index_notation/index_notation_nodes.h"
+#include "taco/index_notation/transformations.h"
 
 #include "taco/ir/ir.h"
 #include "taco/ir/simplify.h"
@@ -50,7 +51,8 @@ ir::Stmt lower(IndexStmt stmt, std::string name,
   string reason;
   taco_iassert(isLowerable(stmt, &reason))
       << "Not lowerable, because " << reason << ": " << stmt;
-  
+
+  stmt = scalarPromote(stmt);  
   ir::Stmt lowered = lowerer.getLowererImpl()->lower(stmt, name, assemble, compute, pack, unpack);
 
   // TODO: re-enable this
