@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <regex>
 
 #include "taco.h"
 
@@ -435,7 +436,10 @@ static bool setSchedulingCommands(vector<vector<string>> scheduleCommands, parse
 
         void visit(const AccessNode* node) {
           IndexExpr currentExpr(node);
-          if (toString(currentExpr) == exprStr) {
+//FIXME
+
+          //if (toString(currentExpr) == exprStr) {
+          if (std::regex_replace(toString(currentExpr), std::regex("\\([0-9]+,[0-9]+,[0-9]+\\)"),"") == exprStr) {
             expr = currentExpr;
           }
           else {
@@ -445,7 +449,7 @@ static bool setSchedulingCommands(vector<vector<string>> scheduleCommands, parse
 
         void visit(const UnaryExprNode* node) {
           IndexExpr currentExpr(node);
-          if (toString(currentExpr) == exprStr) {
+          if (std::regex_replace(toString(currentExpr), std::regex("\\([0-9]+,[0-9]+,[0-9]+\\)"),"") == exprStr) {
             expr = currentExpr;
           }
           else {
@@ -455,7 +459,7 @@ static bool setSchedulingCommands(vector<vector<string>> scheduleCommands, parse
 
         void visit(const BinaryExprNode* node) {
           IndexExpr currentExpr(node);
-          if (toString(currentExpr) == exprStr) {
+          if (std::regex_replace(toString(currentExpr), std::regex("\\([0-9]+,[0-9]+,[0-9]+\\)"),"") == exprStr) {
             expr = currentExpr;
           }
           else {
