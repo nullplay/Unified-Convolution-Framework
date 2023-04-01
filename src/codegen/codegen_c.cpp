@@ -357,11 +357,15 @@ void CodeGen_C::visit(const Function* func) {
 
   // Print variable declarations
   out << printDecls(varFinder.varDecls, func->inputs, func->outputs) << endl;
+  
+  //std::cout << printDecls(varFinder.varDecls, func->inputs, func->outputs) << std::endl;
 
   if (emittingCoroutine) {
     out << printContextDeclAndInit(varMap, localVars, numYields, func->name)
         << endl;
   }
+
+  
 
   // output body
   print(func->body);
