@@ -7,8 +7,8 @@ Build TACO-UCF using CMake 3.4.0 or greater:
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make -j8
-    export LD_LIBRARY_PATH=<UCF-directory>/build/lib/:LD_LIBRARY_PATH
-
+    export LD_LIBRARY_PATH=$(pwd)/lib/:$LD_LIBRARY_PATH
+    
 ## Building for CUDA
 To build TACO-UCF for NVIDIA CUDA, add `-DCUDA=ON` to the cmake line above. For example:
 
