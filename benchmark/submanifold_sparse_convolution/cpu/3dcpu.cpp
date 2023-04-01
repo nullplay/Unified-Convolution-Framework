@@ -118,7 +118,8 @@ int main(int argc, char* argv[]) {
   Tensor<float> Out("O", {P,Q,U,M}, Format{Dense,QFormat,UFormat,Dense});
   Tensor<float> I("In", {P,Q,U,C}, Format{Dense,QFormat,UFormat,Dense});
   Tensor<float> Mask("Mask", {P,Q,U}, Format{Dense,QFormat,UFormat});
-  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,(argv[2]==std::string("dense"))?Dense:Sparse,Dense,Dense}); 
+  //Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,(argv[2]==std::string("dense"))?Dense:Sparse,Dense,Dense}); 
+  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,Dense,Dense,Dense}); 
   Mask.setScalar();
   Tensor<float> B("b", {M}, Format{Dense});
 
