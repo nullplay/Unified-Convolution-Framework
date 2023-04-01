@@ -67,8 +67,9 @@ void* compileThenFunc(IndexStmt stmt) {
   shims_file.close();
 
   // compiling C code
-  string cflag = " -maxrregcount=128  -w -O3 -Xcompiler \"-fPIC -shared -ffast-math -O3\" --generate-code arch=compute_70,code=sm_70 ";
-  string compile_command = "nvcc" + cflag + sourcename + " " + shimname + " -o " + objectname + " -lm"; 
+  string nvidia_cuda_arch = "arch=compute_70,code=sm_70"; // Replace number(70) to your cuda arch number. https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+  string cflag = " -maxrregcount=128  -w -O3 -Xcompiler \"-fPIC -shared -ffast-math -O3\" --generate-code " + nvidia_cuda_arch;
+  string compile_command = "nvcc" + cflag + " " + sourcename + " " + shimname + " -o " + objectname + " -lm"; 
   int err = system(compile_command.c_str());
   if (err != 0) { throw std::invalid_argument("nvcc error"); }
 
