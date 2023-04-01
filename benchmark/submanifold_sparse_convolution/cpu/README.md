@@ -1,6 +1,6 @@
 # Submanifold(Mask) Sparse Convolution Experimentation on CPU
 This directory contains codes for experimenting with submanifold sparse convolution on CPU. 
-To compile the generated UCF code, we recommend using Intel C++ Compiler Classic (`icc`, `icpc`) for better performance. You can download `icc` from [here](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html#gs.fyw7ne). Please note that you need to install Intel C++ Compiler Classic (`icc` and `icpc`), not a OneAPI compiler. 
+To compile the generated UCF code, we recommend using Intel C++ Compiler Classic (`icc`, `icpc`) for better performance. You can download `icc` from [here](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html#gs.fyw7ne). Please note that you need to install Intel C++ Compiler Classic, not a OneAPI compiler. 
 
 
 ## How to build 
