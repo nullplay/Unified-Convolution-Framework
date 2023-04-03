@@ -22,7 +22,7 @@ If the elapsed time of each layer is displayed, the command ran successfully.
 
 
 ## Testing Dual Sparse Submanifold Convolution
-You can also test dual sparse submanifold convolution where filter is pruned and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
+You can also test dual sparse submanifold convolution where filter is pruned(sparsified) and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
 
 To test dual sparse submanifold convolution, run the following command:
 
