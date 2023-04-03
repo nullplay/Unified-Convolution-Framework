@@ -15,14 +15,33 @@ To build, run the following commands:
 We have provided five real-world point clouds (`LIDAR1`, `LIDAR2`, `office`, `lobby`, and `conferenceRoom`).
 To test submanifold sparse convolution (in_channel=out_channel=64), run the following command:
 
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns 
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns 
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns dense 0 
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns dense 0 
     
-    ./3dgpu_else ../../Dataset/3D/office.tns 
-    ./3dgpu_else ../../Dataset/3D/lobby.tns 
-    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns 
+    ./3dgpu_else ../../Dataset/3D/office.tns dense 0
+    ./3dgpu_else ../../Dataset/3D/lobby.tns dense 0
+    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 0
     
 If the elapsed time of each layer is displayed, the command ran successfully.
+
+
+## Testing Dual Sparse Submanifold Convolution
+You can also test dual sparse submanifold convolution where filter is pruned and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
+
+To test dual sparse submanifold convolution, run the following command:
+
+    ./3dgpu_<lidar|else> ../../Dataset/3D/<LIDAR1|LIDAR2|office|lobby|conferenceRoom>.tns sparse <FilterSparsity>
+
+    #Example: running dual sparse convolution with 75% Filter Sparsity (75% of filter is zero).
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns sparse 75
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns sparse 75
+    
+    ./3dgpu_else ../../Dataset/3D/office.tns sparse 75
+    ./3dgpu_else ../../Dataset/3D/lobby.tns sparse 75
+    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 75
+
+If the elapsed time of each layer is displayed, the command ran successfully.
+
 
 ## Inspecting generated code by UCF
 After running the command, you can find the generated submanifold sparse convolution code in the `./code/` directory.

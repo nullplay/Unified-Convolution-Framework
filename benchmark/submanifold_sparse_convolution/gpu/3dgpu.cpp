@@ -144,7 +144,8 @@ int main(int argc, char* argv[]) {
   Tensor<float> Mask("Mask", {P,Q,U}, Format({Dense,QFormat,UFormat}));
   Tensor<float> Out("O", {P,Q,U,M}, Format({Dense,QFormat,UFormat,Dense}));
   Tensor<float> I("In", {P,Q,U,C}, Format({Dense,QFormat,UFormat,Dense}));
-  Tensor<float> F("F", {R,S,T,C,M}, Format({Dense,Dense,Dense,Dense,Dense}));
+  //Tensor<float> F("F", {R,S,T,C,M}, Format({Dense,Dense,Dense,Dense,Dense}));
+  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,(argv[2]==std::string("dense"))?Dense:Sparse,Dense,Dense}); 
 
   Mask.setScalar();
   Tensor<float> B("b", {M}, Format{Dense});
@@ -155,12 +156,26 @@ int main(int argc, char* argv[]) {
     O.insert({p[0], p[1], p[2], 0}, (float)0.0);
   }
 
-  for (int r=0; r<R; r++)
-    for (int s=0; s<S; s++)
-      for (int t=0; t<T; t++)
-        for (int m=0; m<M; m++)
-          for (int c=0; c<1; c++)
-            F.insert({r,s,t,c,m}, (float)1.0);
+  
+  random_device rd;
+  mt19937 gen;
+  float sparsity=((float)atoi(argv[3]))/100.0; 
+  uniform_real_distribution<> dis(0,1);
+
+  int cnt = 0;
+  for (int r=0; r<R; r++) { 
+    for (int s=0; s<S; s++) {
+      for (int t=0; t<T; t++) {
+        if (dis(gen)>=sparsity) { //75% Sparsity
+          for (int c=0; c<C; c++) {
+            for (int m=0; m<M; m++) {
+                F.insert({r,s,t,c,m}, (float)1.0);
+            }
+          }
+        }
+      }
+    }
+  }
 
   I.pack();
   Mask.pack();
@@ -168,7 +183,7 @@ int main(int argc, char* argv[]) {
   O.pack();
 
   //cout << filename << " " << P << "x" << Q << "x" << U <<  " (Nonzeros: " << crds.size() << ")" << I.getStorage().getSizeInBytes() << endl;
-  cout << filename << " " << P << "x" << Q << "x" << U <<  " (Nonzeros: " << crds.size() << ")" << endl;
+  cout << filename << " " << P << "x" << Q << "x" << U <<  " (Nonzeros: " << crds.size() << ")" << " " ;
   IndexVar p("p"), q("q"), r("r"), s("s"), t("t"), u("u"), c("c"), m("m"), b("b"), d("d"), e("e"),f("f"),fb("fb"),ff("ff"), ffb("ffb"), fff("fff"), fffb("fffb"), pre_val("pre_val");
   IndexVar f1("f1"), f2("f2"), u1("u1"), u2("u2");
   IndexVar c1("c1"), c2("c2"), c3("c3");
@@ -178,14 +193,23 @@ int main(int argc, char* argv[]) {
  
 
 #if defined LIDAR
-  IndexStmt stmt = Out.getAssignment().concretize()
-                    .reorder({p,r,s,t,q,u,m,c})
-                    .fuse(p,r,f)
-                    .fuse(f,s,ff)
-                    .fuse(ff,t,fff)
-                    .bound(fff,fffb,P*R*S*T,BoundType::MaxExact)
-                    .parallelize(fffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
-                    .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  IndexStmt stmt = Out.getAssignment().concretize();
+  if (argv[2]==std::string("dense")) {
+     stmt=stmt.reorder({p,r,s,t,q,u,m,c})
+              .fuse(p,r,f)
+              .fuse(f,s,ff)
+              .fuse(ff,t,fff)
+              .bound(fff,fffb,P*R*S*T,BoundType::MaxExact)
+              .parallelize(fffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
+              .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  } else {
+     stmt=stmt.reorder({p,r,s,t,q,u,m,c})
+              .fuse(p,r,f)
+              .fuse(f,s,ff)
+              .bound(ff,ffb,P*R*S,BoundType::MaxExact)
+              .parallelize(ffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
+              .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  }
 #else  
   IndexStmt stmt = Out.getAssignment().concretize()
                     .reorder({p,q,r,s,t,u,c,m})
