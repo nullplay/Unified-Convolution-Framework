@@ -1,6 +1,7 @@
 # (CPU) Dual Sparse Convolution Experimentation on Pruned ResNet50 
 
-**For dual sparse convolution, we used an NHWC input layout as opposed to NCHW layout used in a filter-only sparse convolution.**
+**For dual sparse convolution, we used an NHWC input layout as opposed to NCHW layout used in a filter-only sparse convolution.**  
+
 This directory contains codes for experimenting with dual sparse convolution on pruned ResNet50. To compile the generated UCF code, we recommend using Intel C++ Compiler Classic (`icc`, `icpc`) for better performance. You can download `icc` from [here](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html#gs.fyw7ne). Please note that you need to install Intel C++ Compiler Classic (`icc` and `icpc`), not a OneAPI compiler. 
 
 ## How to build 
