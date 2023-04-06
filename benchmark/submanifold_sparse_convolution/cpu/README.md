@@ -22,10 +22,10 @@ If the elapsed time of each layer is displayed, the command ran successfully.
 
 
 ## Testing Dual Sparse Submanifold Convolution
-You can also test dual sparse submanifold convolution where filter is pruned(sparsified) and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. 
+You can also test dual sparse submanifold convolution where filter is pruned(sparsified). 
 
-###RST-structured sparsity 
-We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
+### RST-structured sparsity 
+We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. We stored filter in R(U)-S(U)-T(C)-C(U)-M(U) format. 
 
 To test dual sparse submanifold convolution on RST-structure, run the following command:
 
@@ -34,8 +34,8 @@ To test dual sparse submanifold convolution on RST-structure, run the following 
     #Example: running dual sparse convolution on office.tns with 75% Filter Sparsity(75% of filter is zero).
     ./3dcpu ../../Dataset/3D/office.tns sparse 75 RST
  
-###RSTCM-structured sparsity (Unstructured Sparsity)
-We prune all dimensions of filter (R,S,T,C,M) uniformly which will result in unstructured sparsity. 
+### RSTCM-structured sparsity (Unstructured Sparsity)
+We prune all dimensions of filter (R,S,T,C,M) uniformly which will result in unstructured sparsity. We stored filter in R(U)-S(U)-T(C)-C(U)-M(C) format. 
 
 To test dual sparse submanifold convolution on unstructured sparsity, run the following command:
 
