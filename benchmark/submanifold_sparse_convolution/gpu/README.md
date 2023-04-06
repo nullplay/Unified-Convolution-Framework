@@ -15,30 +15,44 @@ To build, run the following commands:
 We have provided five real-world point clouds (`LIDAR1`, `LIDAR2`, `office`, `lobby`, and `conferenceRoom`).
 To test submanifold sparse convolution (in_channel=out_channel=64), run the following command:
 
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns dense 0 
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns dense 0 
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns dense 0 RSTCM 
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns dense 0 RSTCM
     
-    ./3dgpu_else ../../Dataset/3D/office.tns dense 0
-    ./3dgpu_else ../../Dataset/3D/lobby.tns dense 0
-    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 0
+    ./3dgpu_else ../../Dataset/3D/office.tns dense 0 RSTCM
+    ./3dgpu_else ../../Dataset/3D/lobby.tns dense 0 RSTCM
+    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 0 RSTCM
     
 If the elapsed time of each layer is displayed, the command ran successfully.
 
 
 ## Testing Dual Sparse Submanifold Convolution
-You can also test dual sparse submanifold convolution where filter is pruned(sparsified) and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
+You can also test dual sparse submanifold convolution where filter is pruned(sparsified) and stored in R(U)-S(U)-T(C)-C(U)-M(U) format. 
 
-To test dual sparse submanifold convolution, run the following command:
+###RST-structured sparsity 
+We prune a filter's spatial dimension (R,S,T) and make channels to be dense for survived spatial dimension. 
 
-    ./3dgpu_<lidar|else> ../../Dataset/3D/<LIDAR1|LIDAR2|office|lobby|conferenceRoom>.tns sparse <FilterSparsity>
+To test dual sparse submanifold convolution on RST-structure, run the following command:
+
+    ./3dgpu_<lidar|else> ../../Dataset/3D/<LIDAR1|LIDAR2|office|lobby|conferenceRoom>.tns sparse <FilterSparsity> RST
 
     #Example: running dual sparse convolution with 75% Filter Sparsity (75% of filter is zero).
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns sparse 75
-    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns sparse 75
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR1.tns sparse 75 RST
+    ./3dgpu_lidar ../../Dataset/3D/LIDAR2.tns sparse 75 RST
     
-    ./3dgpu_else ../../Dataset/3D/office.tns sparse 75
-    ./3dgpu_else ../../Dataset/3D/lobby.tns sparse 75
-    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 75
+    ./3dgpu_else ../../Dataset/3D/office.tns sparse 75 RST
+    ./3dgpu_else ../../Dataset/3D/lobby.tns sparse 75 RST
+    ./3dgpu_else ../../Dataset/3D/conferenceRoom.tns dense 75 RST
+
+###RSTCM-structured sparsity (Unstructured Sparsity)
+We prune all dimensions of filter (R,S,T,C,M) uniformly which will result in unstructured sparsity. 
+
+To test dual sparse submanifold convolution on unstructured sparsity, run the following command:
+
+    ./3dgpu_<lidar|else> ../../Dataset/3D/<LIDAR1|LIDAR2|office|lobby|conferenceRoom>.tns sparse <FilterSparsity> RSTCM
+
+    #Example: running dual sparse convolution on office.tns with 75% Filter Sparsity(75% of filter is zero).
+    ./3dgpu_else ../../Dataset/3D/office.tns sparse 75 RSTCM
+ 
 
 If the elapsed time of each layer is displayed, the command ran successfully.
 

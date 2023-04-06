@@ -25,7 +25,7 @@ using namespace std;
 void* lib_handle = NULL;
 
 typedef int (*compute)(taco_tensor_t* O, taco_tensor_t* Mask, taco_tensor_t* In, taco_tensor_t* F);
-void* compileThenFunc(IndexStmt stmt) {
+void* compileThenFunc(IndexStmt stmt, bool unstructured_sparsity=false) {
   string prefix_path = "./code/";
   string sourcename = prefix_path+"submanifold_gpu.cu";
   string shimname = prefix_path+"submanifold_gpu_shim.cpp";
@@ -43,6 +43,11 @@ void* compileThenFunc(IndexStmt stmt) {
   generated_code = std::regex_replace(generated_code, std::regex("= uO "), "= uMask ");
   generated_code = std::regex_replace(generated_code, std::regex("Mask_val \\* In_vals"), "In_vals");
   generated_code = std::regex_replace(generated_code, std::regex("O_vals\\[pO\\] = 0\\.0;"), "");
+#ifdef LIDAR
+  if (unstructured_sparsity) { // for unstructured sparsity
+    generated_code = std::regex_replace(generated_code, std::regex("cF"), "c");
+  } 
+#endif
   
   // cuda kernel
   ofstream source_file;
@@ -144,8 +149,11 @@ int main(int argc, char* argv[]) {
   Tensor<float> Mask("Mask", {P,Q,U}, Format({Dense,QFormat,UFormat}));
   Tensor<float> Out("O", {P,Q,U,M}, Format({Dense,QFormat,UFormat,Dense}));
   Tensor<float> I("In", {P,Q,U,C}, Format({Dense,QFormat,UFormat,Dense}));
-  //Tensor<float> F("F", {R,S,T,C,M}, Format({Dense,Dense,Dense,Dense,Dense}));
-  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,(argv[2]==std::string("dense"))?Dense:Sparse,Dense,Dense}); 
+  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,
+                                           Dense,
+                                           (argv[2]==std::string("sparse")) ? Sparse : Dense,
+                                           Dense,
+                                           (argv[2]==std::string("sparse") && argv[4]==std::string("RSTCM")) ? Sparse : Dense}); 
 
   Mask.setScalar();
   Tensor<float> B("b", {M}, Format{Dense});
@@ -163,13 +171,41 @@ int main(int argc, char* argv[]) {
   uniform_real_distribution<> dis(0,1);
 
   int cnt = 0;
-  for (int r=0; r<R; r++) { 
-    for (int s=0; s<S; s++) {
-      for (int t=0; t<T; t++) {
-        if (dis(gen)>=sparsity) { //75% Sparsity
+  if (argv[2]==std::string("sparse") && argv[4] == std::string("RST")) {
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
+          if (dis(gen)>=sparsity) { //75% Sparsity
+            for (int c=0; c<C; c++) {
+              for (int m=0; m<M; m++) {
+                  F.insert({r,s,t,c,m}, (float)1.0);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else if (argv[2]==std::string("sparse") && argv[4] == std::string("RSTCM")) {
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
           for (int c=0; c<C; c++) {
             for (int m=0; m<M; m++) {
-                F.insert({r,s,t,c,m}, (float)1.0);
+              if (dis(gen)>=sparsity) { //75% Sparsity
+                  F.insert({r,s,t,c,m}, (float)1.0);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else { // argv[2] == dense
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
+          for (int c=0; c<C; c++) {
+            for (int m=0; m<M; m++) {
+              F.insert({r,s,t,c,m}, (float)1.0);
             }
           }
         }
@@ -202,25 +238,40 @@ int main(int argc, char* argv[]) {
               .bound(fff,fffb,P*R*S*T,BoundType::MaxExact)
               .parallelize(fffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
               .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
-  } else {
+  } else if (argv[2]==std::string("sparse") && argv[4]==std::string("RST")) { //RST structured sparsity
      stmt=stmt.reorder({p,r,s,t,q,u,m,c})
               .fuse(p,r,f)
               .fuse(f,s,ff)
               .bound(ff,ffb,P*R*S,BoundType::MaxExact)
               .parallelize(ffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
               .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  } else if (argv[2]==std::string("sparse") && argv[4]==std::string("RSTCM")) { //Unstructured sparsity
+     stmt=stmt.reorder({p,r,s,t,q,u,m,c})
+              .fuse(p,r,f)
+              .fuse(f,s,ff)
+              .bound(ff,ffb,P*R*S,BoundType::MaxExact)
+              .parallelize(ffb, ParallelUnit::GPUBlock, OutputRaceStrategy::Atomics)
+              .parallelize(c, ParallelUnit::GPUThread, OutputRaceStrategy::Atomics);
   }
 #else  
-  IndexStmt stmt = Out.getAssignment().concretize()
-                    .reorder({p,q,r,s,t,u,c,m})
-                    .fuse(p,q,f)
-                    .bound(f,fb,P*Q,BoundType::MaxExact)
-                    .parallelize(fb, ParallelUnit::GPUBlock, OutputRaceStrategy::NoRaces)
-                    .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  IndexStmt stmt = Out.getAssignment().concretize();
+  if ((argv[2]==std::string("dense")) || (argv[2]==std::string("sparse") && argv[4]==std::string("RST")) ) {
+     stmt=stmt.reorder({p,q,r,s,t,u,c,m})
+              .fuse(p,q,f)
+              .bound(f,fb,P*Q,BoundType::MaxExact)
+              .parallelize(fb, ParallelUnit::GPUBlock, OutputRaceStrategy::NoRaces)
+              .parallelize(m, ParallelUnit::GPUThread, OutputRaceStrategy::NoRaces);
+  } else if (argv[2]==std::string("sparse") && argv[4]==std::string("RSTCM")){
+     stmt=stmt.reorder({p,q,r,s,t,u,c,m})
+              .fuse(p,q,f)
+              .bound(f,fb,P*Q,BoundType::MaxExact)
+              .parallelize(fb, ParallelUnit::GPUBlock, OutputRaceStrategy::NoRaces)
+              .parallelize(c, ParallelUnit::GPUThread, OutputRaceStrategy::Atomics);
+  }
 #endif
 
 
-  compute func = (compute)compileThenFunc(stmt);
+  compute func = (compute)compileThenFunc(stmt, argv[2]==std::string("sparse")&&argv[4]==std::string("RSTCM"));
 
   func(O.getTacoTensorT(), I.getTacoTensorT(), I.getTacoTensorT(), F.getTacoTensorT());
   func(O.getTacoTensorT(), I.getTacoTensorT(), I.getTacoTensorT(), F.getTacoTensorT());

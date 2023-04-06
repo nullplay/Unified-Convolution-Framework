@@ -118,7 +118,12 @@ int main(int argc, char* argv[]) {
   Tensor<float> Out("O", {P,Q,U,M}, Format{Dense,QFormat,UFormat,Dense});
   Tensor<float> I("In", {P,Q,U,C}, Format{Dense,QFormat,UFormat,Dense});
   Tensor<float> Mask("Mask", {P,Q,U}, Format{Dense,QFormat,UFormat});
-  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,Dense,(argv[2]==std::string("dense"))?Dense:Sparse,Dense,Dense}); 
+  Tensor<float> F("F", {R,S,T,C,M}, Format{Dense,
+                                           Dense,
+                                           (argv[2]==std::string("sparse")) ? Sparse : Dense,
+                                           Dense,
+                                           (argv[2]==std::string("sparse") && argv[4]==std::string("RSTCM")) ? Sparse : Dense}); 
+
   Mask.setScalar();
   Tensor<float> B("b", {M}, Format{Dense});
 
@@ -140,13 +145,41 @@ int main(int argc, char* argv[]) {
   uniform_real_distribution<> dis(0,1);
 
   int cnt = 0;
-  for (int r=0; r<R; r++) { 
-    for (int s=0; s<S; s++) {
-      for (int t=0; t<T; t++) {
-        if (dis(gen)>=sparsity) { //75% Sparsity
+  if (argv[2]==std::string("sparse") && argv[4] == std::string("RST")) {
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
+          if (dis(gen)>=sparsity) { //75% Sparsity
+            for (int c=0; c<C; c++) {
+              for (int m=0; m<M; m++) {
+                  F.insert({r,s,t,c,m}, (float)1.0);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else if (argv[2]==std::string("sparse") && argv[4] == std::string("RSTCM")) {
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
           for (int c=0; c<C; c++) {
             for (int m=0; m<M; m++) {
-                F.insert({r,s,t,c,m}, (float)1.0);
+              if (dis(gen)>=sparsity) { //75% Sparsity
+                  F.insert({r,s,t,c,m}, (float)1.0);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else { // argv[2] == dense
+    for (int r=0; r<R; r++) { 
+      for (int s=0; s<S; s++) {
+        for (int t=0; t<T; t++) {
+          for (int c=0; c<C; c++) {
+            for (int m=0; m<M; m++) {
+              F.insert({r,s,t,c,m}, (float)1.0);
             }
           }
         }
